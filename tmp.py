@@ -1,3 +1,6 @@
-import poloniex
-pip install seaborn
-import seaborn as sns
+pip install html5lib
+pip install beautifulsoup4
+
+import requests
+from bs4 import BeautifulSoup
+
