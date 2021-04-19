@@ -10,7 +10,7 @@ import datetime
 import poloniex
 
 # Load price from Poloniex
-def load_price(
+def load_chart(
     price='USDT_BTC',
     price_type='open',
     data_range=365
@@ -22,6 +22,15 @@ def load_price(
 
     chart = polo.returnChartData(price, period=period, start=start, end=end)
     df = DataFrame.from_dict(chart)
+
+    return df
+
+def get_price(
+    price='USDT_BTC',
+    price_type='open',
+    data_range=365
+    ):
+    df = load_chart(price=price, price_type=price_type, data_range=data_range)
 
     timestamp = df['date'].values.tolist() # Series -> ndarray -> list
     # timestamp -> year/month/day
@@ -39,7 +48,7 @@ def plot_graph(
     data_range=365,
     name='chart-BTC.png'
     ):
-    date, price = load_price(
+    date, price = get_price(
         price=price,
         price_type=price_type,
         data_range=data_range)
@@ -53,13 +62,7 @@ def plot_candlestick(
     data_range=100,
     name='candlestick_BTC.png'
     ):
-    polo = poloniex.Poloniex()
-    period = polo.DAY # period of data
-    end = time.time()
-    start = end - period * data_range
-
-    chart = polo.returnChartData(price, period=period, start=start, end=end)
-    df = DataFrame.from_dict(chart)
+    df = load_chart(price=price, price_type=price_type, data_range=data_range)
 
     timestamp = df['date'].values.tolist() # Series -> ndarray -> list
     # timestamp -> year/month/day
