@@ -97,7 +97,7 @@ def plotTechnical(
     df['EMA20'] = df['open'].ewm(span=20).mean()
     df['SMA50'] = df['open'].rolling(window=50).mean()
     # Calcurate Bollinger Band
-    r = df['open'].rolling(10)
+    r = df['open'].rolling(20)
     df['upper'] = r.mean() + 2 * r.std()
     df['lower'] = r.mean() - 2 * r.std()
 
@@ -109,8 +109,8 @@ def plotTechnical(
     # Plot
     addplot = mpf.make_addplot(df[['EMA20', 'SMA50']])
     fig, axes = mpf.plot(
-        df, type='candle', addplot=addplot, volume=True, 
+        df, type='candle', addplot=addplot, volume=True,
         fill_between=dict(y1=df['lower'].values, y2=df['upper'].values, color='lightblue', alpha=.3),
-        style='charles', returnfig=True, figratio=(12,8), savefig=cf.save_dir + name)
+        style='charles', returnfig=True, figratio=(12,8))
     axes[0].legend(['EMA20', 'SMA50'], loc=2)
     fig.savefig(cf.save_dir + name)
