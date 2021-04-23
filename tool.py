@@ -9,6 +9,8 @@ import datetime
 
 import poloniex
 
+import config as cf
+
 # Load price from Poloniex
 def load_chart(
     price='USDT_BTC',
@@ -53,7 +55,7 @@ def plot_graph(
         price_type=price_type,
         data_range=data_range)
     plt.plot(date, price)
-    plt.savefig(name)
+    plt.savefig(cf.save_dir + name)
 
 # Plot CandleStick Chart
 def plot_candlestick(
@@ -74,5 +76,5 @@ def plot_candlestick(
     df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
     df = df.astype(float)
 
-    mpf.plot(df, type='candle', figratio=(12,4), savefig='candlestick_BTC.png')
+    mpf.plot(df, type='candle', figratio=(12,4), savefig=cf.save_dir + name)
 
