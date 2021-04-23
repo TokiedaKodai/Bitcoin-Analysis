@@ -6,6 +6,6 @@ import seaborn as sns
 
 import tool
 
-# date, price = tool.load_price()
-# tool.plot_graph(data_range=730, name='chart-BTC-2yreas.png')
-tool.plot_candlestick()
+# date, price = tool.loadPrice()
+# tool.plotGraph(data_range=730, name='chart-BTC-2yreas.png')
+tool.plotTechnical(data_range=50)
