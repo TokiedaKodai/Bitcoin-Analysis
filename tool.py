@@ -12,20 +12,18 @@ import poloniex
 
 import config as cf
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
 # Load price from Poloniex
 def loadChart(
     price='USDT_BTC',
-    data_range=365
+    length=365
     ):
     polo = poloniex.Poloniex()
     period = polo.DAY # period of data
     end = time.time()
-    start = end - period * data_range
+    start = end - period * length
 
     chart = polo.returnChartData(price, period=period, start=start, end=end)
-    df = DataFrame.from_dict(chart)
+    df = DataFrame.from_dict(chart, dtype=float)
     return df
 
 # Timestamp to Date (year/month/day)
@@ -34,83 +32,96 @@ def timestamp2date(timestamp):
 # Date to String
 def date2str(date):
     return [date[i].strftime('%Y-%m-%d') for i in range(len(date))]
+# Get Date from DataFrame
+def getDate(df):
+    timestamp = df['date'].values.tolist() # Series -> ndarray -> list
+    date = timestamp2date(timestamp) # timestamp -> year/month/day
+    return date
 
 # Get price and date values
 def getPrice(
     price='USDT_BTC',
-    price_type='open',
-    data_range=365
+    kind='open',
+    length=365
     ):
-    df = loadChart(price=price, data_range=data_range)
-    timestamp = df['date'].values.tolist() # Series -> ndarray -> list
-    date = timestamp2date(timestamp) # timestamp -> year/month/day
-    price = df[price_type].astype(float).values.tolist()
+    df = loadChart(price=price, length=length)
+    date = getDate(df)
+    price = df[kind].astype(float).values.tolist()
     return (date, price)
+
+# Unify Coin DataFrame
+def unifyCoinDF(df):
+    date = getDate(df)
+    df.drop(['date', 'quoteVolume', 'weightedAverage'], axis=1, inplace=True)
+    df.index = pd.to_datetime(date)
+    df.index.name = 'Date'
+    df.columns = cf.unit_columns
+    return df
+# Concat DataFrame
+def concatDF(list_df, list_name, column):
+    newdf = pd.concat([df[column] for df in list_df], axis=1)
+    newdf.columns = list_name
+    newdf.dropna(inplace=True)
+    return newdf
+
+# Add Technical Index
+def addTechnicalIndex(df, kind='Open', bw=20):
+    df['Return'] = df[kind].pct_change() # Daily Return
+    df['EMA20'] = df[kind].ewm(span=20).mean() # 20days EMA
+    df['SMA50'] = df[kind].rolling(window=50).mean() # 50days SMA
+    # Bollinger Band
+    r = df[kind].rolling(bw)
+    df['Upper'] = r.mean() + 2 * r.std()
+    df['Lower'] = r.mean() - 2 * r.std()
+    return df
 
 # Plot graph
 def plotGraph(
     price='USDT_BTC',
-    price_type='open',
-    data_range=365,
+    kind='open',
+    length=365,
     name='chart-BTC.png'
     ):
     date, price = getPrice(
         price=price,
-        price_type=price_type,
-        data_range=data_range)
+        kind=kind,
+        length=length)
     plt.plot(date, price)
     plt.savefig(cf.save_dir + name)
 
 # Plot CandleStick Chart
-def plotCandlestick(
+def plotCandlestickChart(
     price='USDT_BTC',
-    price_type='open',
-    data_range=100,
+    kind='Open',
+    length=100,
     name='candlestick_BTC.png'
     ):
-    df = loadChart(price=price, data_range=data_range)
-    timestamp = df['date'].values.tolist() # Series -> ndarray -> list
-    df['date'] = timestamp2date(timestamp) # timestamp -> year/month/day
-
-    df.index = pd.to_datetime(df['date'])
-    df = df[['open', 'high', 'low', 'close', 'volume']]
-    df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-    df = df.astype(float)
+    df = loadChart(price=price, length=length)
+    df = unifyCoinDF(df)
+    df = addTechnicalIndex(df, kind=kind)
 
     mpf.plot(df, type='candle', figratio=(12,4), savefig=cf.save_dir + name)
 
 # Plot Technical Chart
-def plotTechnical(
+def plotTechnicalChart(
     price='USDT_BTC',
-    price_type='open',
-    data_range=100,
+    kind='Open',
+    length=100,
     name='technical_BTC.png'
     ):
-    # data_range+50 to calcurate SMA50
-    df = loadChart(price=price, data_range=data_range+50)
-    timestamp = df['date'].values.tolist() # Series -> ndarray -> list
-    date = timestamp2date(timestamp) # timestamp -> year/month/day
-    df = df.astype(float)
-    df['date'] = date
+    # length+50 to calcurate SMA50
+    df = loadChart(price=price, length=length+50)
 
-    # Calcurate EMA20 and SMA50
-    df['EMA20'] = df['open'].ewm(span=20).mean()
-    df['SMA50'] = df['open'].rolling(window=50).mean()
-    # Calcurate Bollinger Band
-    r = df['open'].rolling(20)
-    df['upper'] = r.mean() + 2 * r.std()
-    df['lower'] = r.mean() - 2 * r.std()
-
-    df = df.tail(data_range)
-    df.index = pd.to_datetime(df['date'])
-    df = df[['open', 'high', 'low', 'close', 'volume', 'EMA20', 'SMA50', 'upper', 'lower']]
-    df.columns = ['Open', 'High', 'Low', 'Close', 'Volume', 'EMA20', 'SMA50', 'upper', 'lower']
+    # Prepare data
+    df = unifyCoinDF(df)
+    df = addTechnicalIndex(df, kind=kind)
+    df = df.tail(length)
 
     # Plot
     addplot = mpf.make_addplot(df[['EMA20', 'SMA50']])
     fig, axes = mpf.plot(
         df, type='candle', addplot=addplot, volume=True,
-        fill_between=dict(y1=df['lower'].values, y2=df['upper'].values, color='lightblue', alpha=.3),
+        fill_between=dict(y1=df['Lower'].values, y2=df['Upper'].values, color='lightblue', alpha=.3),
         style='charles', returnfig=True, figratio=(12,8))
     axes[0].legend(['EMA20', 'SMA50'], loc=2)
     fig.savefig(cf.save_dir + name)
