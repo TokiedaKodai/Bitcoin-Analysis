@@ -91,34 +91,36 @@ def plotGraph(
     price='USDT_BTC',
     kind='open',
     length=365,
-    name='chart-BTC.png'
+    name='chart-BTC'
     ):
     date, price = getPrice(
         price=price,
         kind=kind,
         length=length)
     plt.plot(date, price)
-    plt.savefig(cf.save_dir + name)
+    # plt.savefig(cf.save_dir + name)
+    savefig(name)
 
 # Plot CandleStick Chart
 def plotCandlestickChart(
     price='USDT_BTC',
     kind='Open',
     length=100,
-    name='candlestick_BTC.png'
+    name='candlestick_BTC'
     ):
     df = loadChart(price=price, length=length)
     df = unifyCoinDF(df)
     df = addTechnicalIndex(df, kind=kind)
 
-    mpf.plot(df, type='candle', figratio=(12,4), savefig=cf.save_dir + name)
+    fig, axes = mpf.plot(df, type='candle', returnfig=True, figratio=(12,4))
+    savefig(name)
 
 # Plot Technical Chart
 def plotTechnicalChart(
     price='USDT_BTC',
     kind='Open',
     length=100,
-    name='technical_BTC.png'
+    name='technical_BTC'
     ):
     # length+50 to calcurate SMA50
     df = loadChart(price=price, length=length+50)
@@ -135,4 +137,5 @@ def plotTechnicalChart(
         fill_between=dict(y1=df['Lower'].values, y2=df['Upper'].values, color='lightblue', alpha=.3),
         style='charles', returnfig=True, figratio=(12,8))
     axes[0].legend(['EMA20', 'SMA50'], loc=2)
-    fig.savefig(cf.save_dir + name)
+    # fig.savefig(cf.save_dir + name)
+    savefig(name)
