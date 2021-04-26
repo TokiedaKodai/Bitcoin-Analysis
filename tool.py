@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import mplfinance as mpf
 import seaborn as sns
 import time
-import datetime
+from datetime import datetime
 import os
 
 import poloniex
@@ -14,11 +14,11 @@ import poloniex
 import config as cf
 
 ############################### LOAD DATA ###############################
-# Load price from Poloniex
+# Load Coin Price from Poloniex
 def loadChart(
     price='USDT_BTC',
     length=365
-    ):
+):
     polo = poloniex.Poloniex()
     period = polo.DAY # period of data
     end = time.time()
@@ -28,10 +28,19 @@ def loadChart(
     df = DataFrame.from_dict(chart, dtype=float)
     return df
 
+# Load Stock Price from Yahoo
+def loadStock(
+    brand='AAPL',
+    year=1
+):
+    end = datetime.now()
+    start = datetime(end.year - year, end.month, end.day)
+    return DataReader(brand, 'yahoo', start, end)
+
 ############################### EDIT TIME ###############################
 # Timestamp to Date (year/month/day)
 def timestamp2date(timestamp):
-    return [datetime.datetime.fromtimestamp(timestamp[i]).date() for i in range(len(timestamp))]
+    return [datetime.fromtimestamp(timestamp[i]).date() for i in range(len(timestamp))]
 # Date to String
 def date2str(date):
     return [date[i].strftime('%Y-%m-%d') for i in range(len(date))]
@@ -51,7 +60,17 @@ def getPrice(
     ):
     df = loadChart(price=price, length=length)
     date = getDate(df)
-    price = df[kind].astype(float).values.tolist()
+    price = df[kind].values.tolist()
+    return (date, price)
+# Get Stock price and date values
+def getStockPrice(
+    brand='AAPL',
+    kind='Open',
+    year=1
+    ):
+    df = loadStock(brand=brand, year=year)
+    date = df.index.tolist()
+    price = df[kind].values.tolist()
     return (date, price)
 
 # Unify Coin DataFrame
@@ -62,6 +81,11 @@ def unifyCoinDF(df):
     df.index.name = 'Date'
     df.columns = cf.unit_columns
     return df
+
+# Unify Stock DataFrame
+def unifyStockDF(df):
+    return df.drop('Adj Close', axis=1)
+
 # Concat DataFrame
 def concatDF(list_df, list_name, column):
     newdf = pd.concat([df[column] for df in list_df], axis=1)
@@ -98,7 +122,6 @@ def plotGraph(
         kind=kind,
         length=length)
     plt.plot(date, price)
-    # plt.savefig(cf.save_dir + name)
     savefig(name)
 
 # Plot CandleStick Chart
@@ -137,5 +160,24 @@ def plotTechnicalChart(
         fill_between=dict(y1=df['Lower'].values, y2=df['Upper'].values, color='lightblue', alpha=.3),
         style='charles', returnfig=True, figratio=(12,8))
     axes[0].legend(['EMA20', 'SMA50'], loc=2)
-    # fig.savefig(cf.save_dir + name)
+    savefig(name)
+
+############################### PLOT GRAPH ###############################
+# JointPlot
+def plotJoint(df1, df2, kind='Open', scatter='hex', name='jointplot', color=None):
+    plt.figure()
+    sns.jointplot(x=df1[kind], y=df2[kind], kind=scatter, color=color)
+    savefig(name)
+
+def plotPair(df, name='pairplot'):
+    plt.figure()
+    fig = sns.PairGrid(df)
+    fig.map_upper(plt.scatter)
+    fig.map_lower(sns.kdeplot, cmap='cool_d')
+    fig.map_diag(plt.hist, color='purple')
+    savefig(name)
+
+def plotHeatmap(df, name='heatmap', annot=True):
+    plt.figure()
+    sns.heatmap(df.corr(), annot=annot)
     savefig(name)
