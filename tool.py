@@ -1,5 +1,6 @@
 import pandas as pd
 from pandas import Series, DataFrame
+from pandas_datareader import DataReader
 import numpy as np
 import matplotlib.pyplot as plt
 import mplfinance as mpf
@@ -12,6 +13,7 @@ import poloniex
 
 import config as cf
 
+############################### LOAD DATA ###############################
 # Load price from Poloniex
 def loadChart(
     price='USDT_BTC',
@@ -26,12 +28,15 @@ def loadChart(
     df = DataFrame.from_dict(chart, dtype=float)
     return df
 
+############################### EDIT TIME ###############################
 # Timestamp to Date (year/month/day)
 def timestamp2date(timestamp):
     return [datetime.datetime.fromtimestamp(timestamp[i]).date() for i in range(len(timestamp))]
 # Date to String
 def date2str(date):
     return [date[i].strftime('%Y-%m-%d') for i in range(len(date))]
+
+############################### EDIT DATA FRAME ###############################
 # Get Date from DataFrame
 def getDate(df):
     timestamp = df['date'].values.tolist() # Series -> ndarray -> list
@@ -74,6 +79,12 @@ def addTechnicalIndex(df, kind='Open', bw=20):
     df['Upper'] = r.mean() + 2 * r.std()
     df['Lower'] = r.mean() - 2 * r.std()
     return df
+
+############################### PLOT CHART ###############################
+# Save Figure by some formats
+def savefig(name):
+    for fmt in cf.save_formats:
+        plt.savefig(cf.save_dir + name + fmt)
 
 # Plot graph
 def plotGraph(
