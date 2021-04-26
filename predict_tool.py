@@ -36,9 +36,9 @@ def simulateMonteCarlo(df, days, runs=5, kind='Open'):
     
     return simudf
 # Predict by Monte Carlo
-def predictMonteCarlo(df, days, val_days, runs=5, kind='Open', eval_end=False):
-    length = len(df) - val_days
-    dt = 1 / days
+def predictMonteCarlo(df, days, val_days, runs=5, kind='Open'):
+    length = len(df)
+    dt = 1
     returns = df[kind].head(length).pct_change()
     mu = returns.mean()
     sigma = returns.std()
@@ -51,22 +51,24 @@ def predictMonteCarlo(df, days, val_days, runs=5, kind='Open', eval_end=False):
     # Simulate
     for run in range(1, runs+1):
         simu = np.full(len(df)+days, None)
-        simu[length:] = monte_carlo(df.iloc[length][kind], val_days+days, dt, mu, sigma)
-
+        simu[length-val_days:] = monte_carlo(df.iloc[length-val_days][kind], val_days+days, dt, mu, sigma)
         simudf['Simulate {}'.format(run)] = simu
         
     # Evaluate
     score = []
-    val = len(df) - 1
+    val = length - 1
     goal = df[kind][val]
     for run in range(1, runs+1):
-        if eval_end:
-            score.append(abs(simudf['Simulate {}'.format(run)].iloc[val] - goal))
-        else:
-            score.append(np.mean(np.abs(simudf['Simulate {}'.format(run)].iloc[length:len(df)] - goal)))
+        score.append(np.mean(np.square(
+            simudf['Simulate {}'.format(run)].iloc[length-val_days:length]
+                - simudf[kind].iloc[length-val_days:length])))
+    best = np.argmin(score) + 1
     for run in range(1, runs+1):
-        if run != np.argmin(score) + 1:
+        if run == best:
+            simudf['Best'] = simudf['Simulate {}'.format(run)]
+        else:
             simudf['Simulate {}'.format(run)].iloc[len(df):] = None
-    print(score)
+            
+    print('Best model : ', best)
     return simudf
 
