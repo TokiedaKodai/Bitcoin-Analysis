@@ -22,7 +22,7 @@ start = 200
 split = 315
 train = BTC.iloc[start:split]
 test = BTC['Open'].iloc[split-1:]
-pred = ptl.predictMonteCarlo(train, 50, 50, runs=100000)
+pred = ptl.predictMonteCarlo(train, 50, 50, runs=100)
 plt.figure(figsize=(15, 5))
 plt.plot(pred['Open'])
 plt.plot(test)
