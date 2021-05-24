@@ -1,5 +1,6 @@
 # Directory
 save_dir = '../Output/'
+model_dir = '../Model'
 
 # Figure
 save_formats = ['.png', '.pdf', '.svg']

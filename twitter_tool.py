@@ -11,7 +11,8 @@ import csv
 import config as cf
 
 keysfile = '../twitter_API/key/keys.json'
-signature = '#TweetFromPython'
+# signature = '#TweetFromPython'
+signature = ''
 
 ##################### Twitter API #####################
 def create_oauth_session(oauth_key_dict):
@@ -128,12 +129,14 @@ def get_pn_color(word, font_size, **kwargs):
     else:
         g = 255
     return (r, g, b)
+    # return (255, 255, 255)
 
 # Word Cloud
 def word_cloud(words, image_file, num,
                 font_path='C:/Windows/Fonts/MSGOTHIC.TTC'):
     wordcloud = WordCloud(
-            background_color='white', 
+            # background_color='white', 
+            background_color='black', 
             color_func=get_pn_color,
             max_words=num,
             font_path=font_path,
@@ -147,8 +150,6 @@ def tweetTrendWords(oauth, word, count=100, num=100, name='trend'):
     df_search = DataFrame.from_dict(search['statuses'])
     tweets = df_search['text'].tolist()
     tweets = normalize_tweets(tweets)
-    # wards_count = count_words(tweets)
-    # wakachi = get_wakachi(wards_count, num)
     wakachi = get_wakachi(tweets, word)
     word_cloud(wakachi, image_file, num)
     tweet_text = 'search word: {}\nsearch tweets num: {}\ntrend words num: {}'.format(word, count, num)
@@ -158,15 +159,24 @@ def main():
     keys = json.load(open(keysfile))
     twitter = create_oauth_session(keys)
 
-    # text = 'tweet test'
-    # tweet(twitter, text)
-
     search_words = ['ビットコイン', 'イーサリアム']
-    search_num = 200
+    # search_words = ['九大', '九州大学']
+    # search_words = ['ウイルス']
+    # search_words = ['GW', 'ゴールデンウィーク', '大学', '学校', '仕事']
+    search_num = 100
     trend_num = 200
     for word in search_words:
         image_name = word+'_{}-{}'.format(search_num, trend_num)
         tweetTrendWords(twitter, word, count=search_num, num=trend_num, name=image_name)
+
+    # words = '''
+    # 緊急事態宣言　発令中　新型コロナウイルス　警告 変異種　襲来　感染 密　禍
+    # Emergency Alert COVID-19 Corona Virus NewType Pandemic　自粛　SocialDistance
+    # StayHome　要請　接触　ソーシャルディスタンス
+    # '''
+    # word_cloud(words, 'emergency_alert_3.jpg', 100)
+
+    # tweet_image(twitter, '#新型コロナウイルス #COVID19 #緊急事態宣言', cf.save_dir + 'emergency_alert_2.jpg')
 
 if __name__ == '__main__':
     main()
